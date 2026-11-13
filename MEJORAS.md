@@ -127,5 +127,5 @@ Ya definida en el CLAUDE.md, pendiente de hacer.
 
 - [ ] Probar con el sobrino: ¿lo usa solo? ¿vuelve al otro día?
 - [ ] Preguntarle a la hermana si los padres pagarían, y cuánto.
-- [ ] Decidir qué mostrar con los personajes con derechos. Hoy se sugiere una alternativa genérica, como "superhéroe araña".
+- [ ] Decidir qué mostrar con los personajes con derechos. Hoy, además del nombre, se busca una descripción genérica en inglés ("naruto" → "anime ninja"), porque Pixabay no indexa el nombre del personaje, pero el fan art que suben los usuarios sí aparece con la descripción. Primero se muestran los que tienen el nombre en las etiquetas. Sigue siendo fan art de un personaje registrado: no hay problema para que un chico lo copie en casa, pero hay que revisarlo si la app se vuelve paga.
 - [ ] Nombre: buscar "Dibuya" en la base de marcas del INPI, revisar Google Play y la App Store, y registrar `dibuya.com`.

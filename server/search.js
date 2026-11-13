@@ -1,6 +1,6 @@
 // Lógica de búsqueda compartida: la usan el servidor local (server/index.js)
 // y la función serverless de Vercel (api/search.js).
-import { cleanRequest, correctSpelling, isBlocked, copyrightSuggestion, toEnglish, pixabayTerms, openverseTerm } from './query.js'
+import { normalize, cleanRequest, correctSpelling, isBlocked, copyrightSuggestion, toEnglish, pixabayTerms, openverseTerm } from './query.js'
 import { searchOpenverse, searchPixabay } from './sources.js'
 
 // Caché en memoria (semilla de la "biblioteca compartida"; después va a una base de datos).
@@ -60,17 +60,27 @@ export async function search({ source, q, page, lang, ...filters }) {
   const hit = cache.get(key)
   if (hit && Date.now() - hit.at < CACHE_TTL) return hit.value
 
-  let list
-  try {
-    list = await src.run(query, page, filters, lang)
-  } catch (err) {
-    console.warn(`[search] ${source}: ${err.message}`)
+  // Personaje con marca: además del nombre, buscar la descripción genérica (en inglés)
+  // (va primero: el nombre solo suele traer resultados sueltos que no tienen que ver)
+  const runs = [src.run(query, page, filters, lang)]
+  if (copyright) runs.unshift(src.run(copyright.search, page, filters, 'en'))
+  const results = await Promise.allSettled(runs)
+  if (results.every((r) => r.status === 'rejected')) {
+    console.warn(`[search] ${source}: ${results[0].reason?.message}`)
     return { ...base, copyright, error: true }
+  }
+  const lists = results.map((r) => (r.status === 'fulfilled' ? r.value : []))
+  const seen = new Set()
+  const list = lists.flat().filter((it) => !seen.has(it.id) && seen.add(it.id))
+  // Primero los que mencionan al personaje (fan art etiquetado "naruto", etc.)
+  if (copyright) {
+    const named = (it) => normalize(`${it.title} ${it.tags}`).includes(copyright.character)
+    list.sort((a, b) => named(b) - named(a))
   }
 
   // Volver a filtrar por seguridad sobre título/tags
   const items = list.filter((it) => !isBlocked(`${it.title} ${it.tags}`)).map(({ tags, ...rest }) => rest)
-  const value = { ...base, copyright, items, hasMore: list.length >= 20 }
+  const value = { ...base, copyright, items, hasMore: lists.some((l) => l.length >= 20) }
   if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value)
   cache.set(key, { at: Date.now(), value })
   return value

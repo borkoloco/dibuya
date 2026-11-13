@@ -44,8 +44,9 @@ export function isBlocked(text) {
 }
 
 // --- Personajes con derechos (decisión pendiente en CLAUDE.md) ---
-// Provisorio: igual se busca en los bancos (casi no tienen estos personajes)
-// y se sugiere una alternativa genérica.
+// Provisorio: se busca el nombre y además la descripción genérica en inglés
+// (`search`). Los bancos suelen no indexar el nombre del personaje, pero el fan art
+// subido por usuarios aparece con la descripción (ej. "anime ninja" trae Naruto).
 const SPIDER = { es: 'superhéroe araña', en: 'spider superhero' }
 const ICE_PRINCESS = { es: 'princesa de hielo', en: 'ice princess' }
 const COPYRIGHTED = {
@@ -64,6 +65,11 @@ const COPYRIGHTED = {
   minecraft: { es: 'personaje de cubos', en: 'blocky character' },
   stitch: { es: 'extraterrestre azul tierno', en: 'cute blue alien' },
   goku: { es: 'guerrero de anime', en: 'anime warrior' },
+  naruto: { es: 'ninja de anime', en: 'anime ninja' },
+  sasuke: { es: 'ninja de anime', en: 'anime ninja' },
+  luffy: { es: 'pirata de anime', en: 'anime pirate' },
+  'one piece': { es: 'pirata de anime', en: 'anime pirate' },
+  'dragon ball': { es: 'guerrero de anime', en: 'anime warrior' },
   hulk: { es: 'superhéroe verde', en: 'green superhero' },
   'paw patrol': { es: 'perrito rescatista', en: 'rescue puppy' },
   bluey: { es: 'perrita de caricatura', en: 'cartoon puppy' },
@@ -72,7 +78,7 @@ const COPYRIGHTED = {
 
 export function copyrightSuggestion(q, lang = 'es') {
   for (const [name, alt] of Object.entries(COPYRIGHTED)) {
-    if (new RegExp(`\\b${name}\\b`).test(q)) return { character: name, suggestion: alt[lang] ?? alt.es }
+    if (new RegExp(`\\b${name}\\b`).test(q)) return { character: name, suggestion: alt[lang] ?? alt.es, search: alt.en }
   }
   return null
 }

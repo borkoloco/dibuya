@@ -13,7 +13,13 @@ npm run dev            # web en http://localhost:5173 · API en :8787
 Para probar en el celular, en la misma red: `npm run dev:web -- --host` y abrir la IP que muestra Vite.
 (El micrófono y la pantalla siempre encendida piden HTTPS fuera de localhost.)
 
-Producción simple: `npm run build && npm start` (el backend sirve `dist/`).
+## Deploy (Vercel)
+
+- El frontend se publica como sitio estático (`dist/`) y la API como función serverless en `api/search.js`, que reutiliza `server/search.js`.
+- Configurar `PIXABAY_KEY` en Vercel → Settings → Environment Variables (Production y Preview).
+- `main` es producción; cada PR desde `dev` genera una URL de prueba.
+
+Alternativa en cualquier host Node: `npm run build && npm start` (el servidor sirve `dist/` y la API).
 
 ## Qué hay
 

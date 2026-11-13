@@ -7,21 +7,24 @@ const CATEGORIES = [
   ['🦖', 'dinosaur'], ['🐶', 'dog'], ['🐱', 'cat'], ['🦄', 'unicorn'], ['🐉', 'dragon'],
   ['🚗', 'car'], ['🚀', 'rocket'], ['🤖', 'robot'], ['🏰', 'castle'], ['🧜‍♀️', 'mermaid'],
   ['🦸', 'superhero'], ['🦋', 'butterfly'], ['🦈', 'shark'], ['🌸', 'flower'], ['👻', 'ghost'],
-  ['🐴', 'horse'],
+  ['🐴', 'horse'], ['👸', 'princess'], ['🧑‍🚀', 'astronaut'], ['🦁', 'lion'], ['🐼', 'panda'],
+  ['🐢', 'turtle'], ['✈️', 'airplane'], ['🚂', 'train'], ['🏴‍☠️', 'pirate'],
 ]
 
+// Filtros con íconos grandes: tocar uno lo activa, tocarlo de nuevo lo saca
 const FILTERS = {
-  color: ['any', 'color', 'outline'],
-  difficulty: ['any', 'easy', 'medium', 'detailed'],
-  style: ['any', 'cartoon', 'cute', 'realistic'],
+  color: [['color', '🎨'], ['outline', '✏️']],
+  difficulty: [['easy', '⭐'], ['medium', '⭐⭐'], ['detailed', '⭐⭐⭐']],
+  style: [['cartoon', '🤪'], ['cute', '🥰'], ['realistic', '📷']],
 }
 const DEFAULT_FILTERS = { color: 'any', difficulty: 'any', style: 'any' }
 const SOURCE_NAMES = ['pixabay', 'openverse'] // Pixabay primero: es la que responde rápido
 
 export default function App() {
   const { t, lang, nextLang } = useT()
-  const [input, setInput] = useState('')
-  const [query, setQuery] = useState('')
+  // /?q=dinosaurio abre la app con esa búsqueda (lo usan los links de la página de pedidos)
+  const [input, setInput] = useState(() => new URLSearchParams(location.search).get('q')?.slice(0, 80) ?? '')
+  const [query, setQuery] = useState(input)
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [items, setItems] = useState([])
   const [meta, setMeta] = useState({})
@@ -29,7 +32,7 @@ export default function App() {
   const [sources, setSources] = useState({})
   const [selected, setSelected] = useState(null)
   const [showFavs, setShowFavs] = useState(false)
-  const [showFilters, setShowFilters] = useState(false)
+  const [requested, setRequested] = useState(() => new Set()) // pedidos ya enviados en esta sesión
   const activeFilters = Object.values(filters).filter((v) => v !== 'any').length
   const reqId = useRef(0)
   const sourcesRef = useRef({})
@@ -178,37 +181,33 @@ export default function App() {
           </button>
         </form>
         {speech.listening && <p className="mt-2 text-center text-lg font-semibold text-red-500">{t('listening')}</p>}
+      </header>
 
-        {query && !showFavs && (
-          <button
-            onClick={() => setShowFilters((v) => !v)}
-            className={`mt-2 rounded-full px-4 py-1.5 text-base font-semibold sm:hidden ${
-              showFilters ? 'bg-orange-500 text-white' : 'bg-white ring-1 ring-orange-200'
-            }`}
-          >
-            ⚙️ {t('filters')}{activeFilters ? ` (${activeFilters})` : ''} {showFilters ? '▲' : '▼'}
-          </button>
-        )}
-        {query && !showFavs && (
-          <div className={`mt-2 flex-col gap-2 sm:mt-3 sm:flex ${showFilters ? 'flex' : 'hidden'}`}>
-            {Object.entries(FILTERS).map(([key, values]) => (
-              <div key={key} className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-                {values.map((value) => (
+      {/* Fuera del encabezado fijo: al bajar por la grilla, los filtros no tapan los dibujos */}
+      {query && !showFavs && (
+        <div className="mt-1 flex flex-wrap gap-2" role="group" aria-label={t('filters')}>
+          {Object.entries(FILTERS).map(([key, options]) => (
+            <div key={key} className="flex gap-1 rounded-3xl bg-white p-1 ring-2 ring-orange-100">
+              {options.map(([value, icon]) => {
+                const on = filters[key] === value
+                return (
                   <button
                     key={value}
-                    onClick={() => setFilters((f) => ({ ...f, [key]: value }))}
-                    className={`shrink-0 rounded-full px-4 py-1.5 text-base font-semibold ${
-                      filters[key] === value ? 'bg-orange-500 text-white' : 'bg-white ring-1 ring-orange-200'
+                    aria-pressed={on}
+                    onClick={() => setFilters((f) => ({ ...f, [key]: on ? 'any' : value }))}
+                    className={`flex h-16 min-w-14 flex-col items-center justify-center rounded-2xl px-1.5 transition active:scale-90 ${
+                      on ? 'bg-orange-500 text-white shadow' : ''
                     }`}
                   >
-                    {value === 'any' ? t('any') : t(`${key}.${value}`)}
+                    <span className={`leading-none ${key === 'difficulty' ? 'text-base' : 'text-2xl'}`}>{icon}</span>
+                    <span className="mt-1 text-[11px] leading-none font-bold">{t(`${key}.${value}`)}</span>
                   </button>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
-      </header>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      )}
 
       {!query && !showFavs && (
         <section className="mt-4">
@@ -231,20 +230,45 @@ export default function App() {
       {!showFavs && meta.corrected && !meta.blocked && (
         <p className="mt-3 text-base text-stone-600">{t('searchedAs', { q: meta.query })}</p>
       )}
-      {!showFavs && meta.blocked && <Notice>{t('blocked')}</Notice>}
+      {!showFavs && meta.blocked && (
+        <Notice emoji="🙈">
+          {t('blocked')}
+          <Suggestions seed={query} onPick={submit} />
+        </Notice>
+      )}
       {!showFavs && meta.copyright && (
-        <Notice>
+        <Notice emoji="🦸">
           {t('copyright')}{' '}
           <button className="font-bold text-orange-600 underline" onClick={() => submit(meta.copyright.suggestion)}>
             {t('tryInstead', { s: meta.copyright.suggestion })}
           </button>
         </Notice>
       )}
-      {!showFavs && allFailed && items.length === 0 && <Notice>{t('allFailed')}</Notice>}
-      {!showFavs && query && !loading && !meta.blocked && !allFailed && items.length === 0 && (
-        <Notice>{t('noResults', { q: meta.query || query })}</Notice>
+      {!showFavs && allFailed && items.length === 0 && (
+        <Notice emoji="😵">
+          {t('allFailed')}
+          <div>
+            <button onClick={() => runSearch(query, filters, true)} className="mt-3 rounded-full bg-orange-500 px-6 py-3 font-bold text-white shadow active:scale-95">
+              {t('retry')}
+            </button>
+          </div>
+        </Notice>
       )}
-      {showFavs && favs.length === 0 && <Notice>{t('noFavs')}</Notice>}
+      {!showFavs && query && !loading && !meta.blocked && !allFailed && items.length === 0 && (
+        <Notice emoji="🤔">
+          {t('noResults', { q: meta.query || query })}
+          {activeFilters > 0 && (
+            <div>
+              <button onClick={() => setFilters(DEFAULT_FILTERS)} className="mt-3 rounded-full bg-orange-500 px-6 py-3 font-bold text-white shadow active:scale-95">
+                {t('removeFilters')}
+              </button>
+            </div>
+          )}
+          <RequestButton q={meta.query || query} requested={requested} setRequested={setRequested} big />
+          <Suggestions seed={query} onPick={submit} />
+        </Notice>
+      )}
+      {showFavs && favs.length === 0 && <Notice emoji="⭐">{t('noFavs')}</Notice>}
 
       {shown.length > 0 && (
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -260,9 +284,11 @@ export default function App() {
               <button
                 onClick={() => toggle(item)}
                 aria-label={t('favorite')}
-                className="absolute right-2 top-2 h-10 w-10 rounded-full bg-white/90 text-xl shadow"
+                className="absolute right-2 top-2 h-12 w-12 rounded-full bg-white/90 text-2xl shadow active:scale-90"
               >
-                {isFav(item) ? '⭐' : '☆'}
+                <span key={isFav(item) ? 'on' : 'off'} className={isFav(item) ? 'pop inline-block' : 'inline-block'}>
+                  {isFav(item) ? '⭐' : '☆'}
+                </span>
               </button>
             </div>
           ))}
@@ -271,6 +297,7 @@ export default function App() {
 
       {!showFavs && loading && (
         <p className={`mt-6 text-center ${items.length ? 'text-base text-stone-500' : 'text-xl'}`}>
+          {!items.length && <span className="mb-2 block animate-bounce text-5xl">✏️</span>}
           {items.length ? t('loadingMore') : t('loading')}
         </p>
       )}
@@ -280,6 +307,12 @@ export default function App() {
           <button onClick={loadMore} className="rounded-full bg-orange-500 px-8 py-4 text-xl font-bold text-white shadow active:scale-95">
             {t('more')}
           </button>
+        </div>
+      )}
+
+      {!showFavs && !loading && items.length > 0 && (
+        <div className="mt-8 text-center text-base text-stone-600">
+          {t('requestAsk')} <RequestButton q={meta.query || query} requested={requested} setRequested={setRequested} />
         </div>
       )}
 
@@ -315,6 +348,78 @@ function Thumb({ item, onBroken }) {
   )
 }
 
-function Notice({ children }) {
-  return <div className="mt-4 rounded-2xl bg-white p-4 text-lg ring-2 ring-orange-200">{children}</div>
+// Avisos con un dibujo grande: el chico entiende qué pasa aunque no lea todo
+function Notice({ emoji, children }) {
+  return (
+    <div className="mt-4 rounded-3xl bg-white p-5 text-center text-lg ring-2 ring-orange-200">
+      {emoji && <div className="mb-2 text-6xl">{emoji}</div>}
+      {children}
+    </div>
+  )
+}
+
+// Nunca un callejón sin salida: categorías para tocar cuando no hay resultados
+function Suggestions({ seed, onPick }) {
+  const { t } = useT()
+  // Siempre las mismas 4 para el mismo pedido (no cambian en cada render)
+  let h = 0
+  for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  const picks = Array.from({ length: 4 }, (_, i) => CATEGORIES[(h + i * 7) % CATEGORIES.length])
+  return (
+    <div className="mt-4">
+      <p className="mb-2 text-base text-stone-500">{t('tryThese')}</p>
+      <div className="grid grid-cols-4 gap-2">
+        {picks.map(([emoji, id]) => (
+          <button
+            key={id}
+            onClick={() => onPick(t(`cat.${id}`))}
+            className="flex aspect-square flex-col items-center justify-center rounded-2xl bg-orange-50 ring-2 ring-orange-100 active:scale-95"
+          >
+            <span className="text-4xl">{emoji}</span>
+            <span className="mt-1 text-xs font-semibold capitalize">{t(`cat.${id}`)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// "No encontré lo que buscaba": manda el pedido para que Santiago lo habilite
+function RequestButton({ q, requested, setRequested, big }) {
+  const { t } = useT()
+  const [status, setStatus] = useState('idle') // idle | sending | error
+  const sent = requested.has(q)
+
+  const send = async () => {
+    setStatus('sending')
+    try {
+      const res = await fetch('/api/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q }),
+      })
+      if (!res.ok) throw new Error(res.status)
+      setRequested((prev) => new Set(prev).add(q))
+      setStatus('idle')
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  if (sent) return <p className={`font-bold text-green-600 ${big ? 'mt-4 text-xl' : 'mt-2'}`}>{t('requestSent')}</p>
+  return (
+    <span className={big ? 'mt-4 block' : 'inline-block'}>
+      {big && <span className="mb-2 block text-base text-stone-600">{t('requestAsk')}</span>}
+      <button
+        onClick={send}
+        disabled={status === 'sending'}
+        className={`rounded-full font-bold shadow active:scale-95 disabled:opacity-60 ${
+          big ? 'bg-sky-500 px-8 py-4 text-xl text-white' : 'bg-white px-5 py-2 text-base ring-2 ring-sky-300'
+        }`}
+      >
+        {t('requestBtn')}
+      </button>
+      {status === 'error' && <span className="mt-2 block text-base text-red-500">{t('requestError')}</span>}
+    </span>
+  )
 }

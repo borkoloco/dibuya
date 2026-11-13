@@ -17,6 +17,8 @@ Para probar en el celular, en la misma red: `npm run dev:web -- --host` y abrir 
 
 - El frontend se publica como sitio estático (`dist/`) y la API como función serverless en `api/search.js`, que reutiliza `server/search.js`.
 - Configurar `PIXABAY_KEY` en Vercel → Settings → Environment Variables (Production y Preview).
+- Configurar `ADMIN_PASSWORD` (contraseña de la página de pedidos, `/?admin`).
+- Conectar **Upstash Redis** en Vercel → Storage (plan gratis) para guardar los pedidos de los chicos. Crea solas las variables `KV_REST_API_URL` y `KV_REST_API_TOKEN`. Sin Redis, los pedidos quedan en memoria y se pierden.
 - `main` es producción; cada PR desde `dev` genera una URL de prueba.
 
 Alternativa en cualquier host Node: `npm run build && npm start` (el servidor sirve `dist/` y la API).

@@ -8,6 +8,16 @@ html, body, #root {
   min-height: 100%;
 }
 
+/* Festejo chiquito al guardar un favorito */
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.6) rotate(-12deg); }
+  100% { transform: scale(1); }
+}
+.pop {
+  animation: pop 0.4s ease-out;
+}
+
 body {
   background: #fff7ed;
   color: #1c1917;

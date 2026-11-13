@@ -2,6 +2,7 @@
 // y la función serverless de Vercel (api/search.js).
 import { normalize, cleanRequest, correctSpelling, isBlocked, copyrightSuggestion, toEnglish, pixabayTerms, openverseTerm } from './query.js'
 import { searchOpenverse, searchPixabay } from './sources.js'
+import { getAlias } from './requests.js'
 
 // Caché en memoria (semilla de la "biblioteca compartida"; después va a una base de datos).
 // En Vercel dura lo que viva cada instancia.
@@ -27,6 +28,8 @@ const SOURCES = {
 // Errores y fuentes desactivadas no se cachean: así se reintenta o se toma una clave nueva.
 export function cacheControl(body) {
   if (body.error || body.disabled) return 'no-store'
+  // Sin resultados: caché corta, para que un pedido que se habilita se vea pronto
+  if (body.items.length === 0) return 'public, s-maxage=600'
   return 'public, s-maxage=86400, stale-while-revalidate=604800'
 }
 
@@ -56,14 +59,18 @@ export async function search({ source, q, page, lang, ...filters }) {
   const src = SOURCES[source]
   if (!src?.enabled()) return { ...base, copyright, disabled: true }
 
-  const key = JSON.stringify([source, lang, query, page, filters])
+  // Búsqueda extra, en inglés: la descripción genérica de un personaje con marca
+  // o las palabras con que Santiago habilitó un pedido (ver server/requests.js)
+  const alias = copyright ? null : await getAlias(query)
+  const extra = copyright ? { search: copyright.search, name: copyright.character } : alias ? { search: alias, name: query } : null
+
+  const key = JSON.stringify([source, lang, query, page, filters, extra?.search])
   const hit = cache.get(key)
   if (hit && Date.now() - hit.at < CACHE_TTL) return hit.value
 
-  // Personaje con marca: además del nombre, buscar la descripción genérica (en inglés)
-  // (va primero: el nombre solo suele traer resultados sueltos que no tienen que ver)
+  // La búsqueda extra va primero: el nombre solo suele traer resultados sueltos que no tienen que ver
   const runs = [src.run(query, page, filters, lang)]
-  if (copyright) runs.unshift(src.run(copyright.search, page, filters, 'en'))
+  if (extra) runs.unshift(src.run(extra.search, page, filters, 'en'))
   const results = await Promise.allSettled(runs)
   if (results.every((r) => r.status === 'rejected')) {
     console.warn(`[search] ${source}: ${results[0].reason?.message}`)
@@ -72,9 +79,9 @@ export async function search({ source, q, page, lang, ...filters }) {
   const lists = results.map((r) => (r.status === 'fulfilled' ? r.value : []))
   const seen = new Set()
   const list = lists.flat().filter((it) => !seen.has(it.id) && seen.add(it.id))
-  // Primero los que mencionan al personaje (fan art etiquetado "naruto", etc.)
-  if (copyright) {
-    const named = (it) => normalize(`${it.title} ${it.tags}`).includes(copyright.character)
+  // Primero los que mencionan lo pedido (fan art etiquetado "naruto", etc.)
+  if (extra) {
+    const named = (it) => normalize(`${it.title} ${it.tags}`).includes(extra.name)
     list.sort((a, b) => named(b) - named(a))
   }
 

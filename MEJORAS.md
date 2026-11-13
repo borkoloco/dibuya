@@ -44,6 +44,7 @@ Comentario de Rosario (13/11/2026), después de ver a Juanchi usarla: él entien
 
 ### Filtros visuales
 
+- [x] 🟢 **Filtros con íconos (primera versión, sin IA).** Botones grandes con emoji y una palabra corta: 🎨 / ✏️, ⭐ / ⭐⭐ / ⭐⭐⭐ y 🤪 / 🥰 / 📷. Se tocan para activar y de nuevo para sacar, y ya no ocupan lugar en el encabezado fijo.
 - [ ] 🟡 **Filtros con dibujos en lugar de palabras.** Cada opción muestra el mismo dibujo de ejemplo, por ejemplo un dinosaurio:
   - **Color o contornos:** el dinosaurio pintado y el mismo solo con líneas.
   - **Dificultad:** tres versiones del dinosaurio, de muy simple a detallada, o 1, 2 y 3 estrellas.
@@ -74,10 +75,13 @@ Comentario de Rosario (13/11/2026), después de ver a Juanchi usarla: él entien
 ### Otras mejoras
 
 - [x] 🟢 **Enlaces externos detrás de un gesto de adulto.** "Ver original" ahora hay que mantenerlo apretado 1,5 segundos. Cuando exista la puerta para padres, se puede pasar ahí.
-- [ ] 🟢 **Más categorías, y subcategorías.** Por ejemplo, dinosaurio → T-rex, de cuello largo, con alas.
-- [ ] 🟢 **Chips de "lo más pedido"** debajo del buscador.
+- [x] 🟢 **Más categorías:** pasaron de 16 a 24 (princesa, astronauta, león, panda, tortuga, avión, tren, pirata).
+- [ ] 🟢 **Subcategorías.** Por ejemplo, dinosaurio → T-rex, de cuello largo, con alas.
+- [ ] 🟢 **Chips de "lo más pedido"** debajo del buscador. Ahora se puede armar con los pedidos guardados.
 - [ ] 🟡 **Que la app hable.** Leer en voz alta los avisos y los botones ("No encontré eso, ¿probamos con…?") con la síntesis de voz del navegador.
-- [ ] 🟢 **Avisos más visuales.** Ilustraciones simples en lugar de solo texto cuando no hay resultados o hay un error.
+- [x] 🟢 **Avisos más visuales.** Emoji grande en cada aviso. Sin resultados: botón para sacar los filtros, botón para pedir el dibujo y 4 categorías para tocar. Si fallan los bancos: botón "Probar de nuevo".
+- [x] 🟢 **Festejo al guardar un favorito** (la estrella salta) y estrella más grande para tocar.
+- [x] 🟢 **Botón "📮 Pedilo"** cuando no encuentra algo. Los pedidos se guardan en Upstash Redis, solo el texto y cuántas veces se pidió, sin nada que identifique al chico. Santiago los ve en `/?admin` y habilita cada uno con palabras de búsqueda (alias), que se suman a la búsqueda normal como con los personajes con marca. Las búsquedas sin resultados se cachean solo 10 minutos en el CDN, para que un pedido habilitado se vea pronto.
 
 ## 4. Seguridad
 

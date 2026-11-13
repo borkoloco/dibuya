@@ -10,6 +10,11 @@ export const LANGS = [
 const MESSAGES = {
   es: {
     placeholder: '¿Qué querés dibujar?',
+    letsDraw: '¡A dibujar! ✏️',
+    about: '👋 ¿Qué es {name}?',
+    close: 'Cerrar',
+    welcome:
+      '¡Bienvenidos a {name}!\n\n¿Tienes ganas de dibujar, pero no sabes por dónde empezar? ¡Este es tu lugar!\n\nViaja por un mundo lleno de dibujos, descubre animales, personajes, lugares, objetos y criaturas increíbles de diferentes rincones del mundo.\n\nBusca tus favoritos, encuentra nuevas ideas, copia los que más te gusten o deja volar tu imaginación para crear tu propia versión.\n\n¡Mira, descubre, inspírate y dibuja! Porque las mejores creaciones empiezan con una idea.',
     speak: 'Hablar',
     search: 'Buscar',
     listening: 'Te escucho… decí qué querés dibujar',
@@ -74,6 +79,11 @@ const MESSAGES = {
   },
   en: {
     placeholder: 'What do you want to draw?',
+    letsDraw: "Let's draw! ✏️",
+    about: '👋 What is {name}?',
+    close: 'Close',
+    welcome:
+      "Welcome to {name}!\n\nDo you feel like drawing but don't know where to start? This is your place!\n\nTravel through a world full of drawings and discover amazing animals, characters, places, objects and creatures from every corner of the world.\n\nFind your favorites, get new ideas, copy the ones you like best or let your imagination fly and create your own version.\n\nLook, discover, get inspired and draw! Because the best creations start with an idea.",
     speak: 'Speak',
     search: 'Search',
     listening: "I'm listening… say what you want to draw",

@@ -114,7 +114,11 @@ export default function App() {
     setShowFavs(false)
   }
 
-  const shown = showFavs ? favs : items
+  // Imágenes que no cargan (Openverse a veces devuelve 424 en las miniaturas): se ocultan
+  const [broken, setBroken] = useState(() => new Set())
+  const markBroken = useCallback((item) => setBroken((prev) => new Set(prev).add(item.id)), [])
+
+  const shown = (showFavs ? favs : items).filter((item) => !broken.has(item.id))
   const nextLabel = LANGS[(LANGS.findIndex((l) => l.code === lang) + 1) % LANGS.length].label
 
   return (
@@ -240,9 +244,10 @@ export default function App() {
             <div key={item.id} className="relative">
               <button
                 onClick={() => setSelected(item)}
+                aria-label={item.title}
                 className="block aspect-square w-full overflow-hidden rounded-3xl bg-white p-2 shadow-sm ring-2 ring-orange-100 transition active:scale-95"
               >
-                <img src={item.thumb} alt={item.title} loading="lazy" className="h-full w-full object-contain" />
+                <Thumb item={item} onBroken={markBroken} />
               </button>
               <button
                 onClick={() => toggle(item)}
@@ -274,6 +279,31 @@ export default function App() {
         <CopyMode item={selected} isFav={isFav(selected)} onToggleFav={toggle} onClose={() => setSelected(null)} />
       )}
     </div>
+  )
+}
+
+// Miniatura prolija: fondo suave mientras carga (nunca el texto alternativo ni el
+// ícono roto); si falla, prueba la imagen completa y, si tampoco anda, avisa para ocultarla.
+function Thumb({ item, onBroken }) {
+  const [src, setSrc] = useState(item.thumb)
+  const [loaded, setLoaded] = useState(false)
+
+  const onError = () => {
+    if (item.full && src !== item.full) setSrc(item.full)
+    else onBroken(item)
+  }
+
+  return (
+    <span className={`block h-full w-full rounded-2xl ${loaded ? '' : 'animate-pulse bg-orange-50'}`}>
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        onError={onError}
+        className={`h-full w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      />
+    </span>
   )
 }
 

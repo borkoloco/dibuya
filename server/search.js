@@ -1,6 +1,6 @@
 // Lógica de búsqueda compartida: la usan el servidor local (server/index.js)
 // y la función serverless de Vercel (api/search.js).
-import { cleanRequest, isBlocked, copyrightSuggestion, toEnglish, pixabayTerms, openverseTerm } from './query.js'
+import { cleanRequest, correctSpelling, isBlocked, copyrightSuggestion, toEnglish, pixabayTerms, openverseTerm } from './query.js'
 import { searchOpenverse, searchPixabay } from './sources.js'
 
 // Caché en memoria (semilla de la "biblioteca compartida"; después va a una base de datos).
@@ -22,6 +22,14 @@ const SOURCES = {
   },
 }
 
+// Caché en el CDN (Vercel): la misma búsqueda responde desde el borde, al instante
+// y sin gastar cuota de Pixabay (que además pide cachear sus resultados 24 h).
+// Errores y fuentes desactivadas no se cachean: así se reintenta o se toma una clave nueva.
+export function cacheControl(body) {
+  if (body.error || body.disabled) return 'no-store'
+  return 'public, s-maxage=86400, stale-while-revalidate=604800'
+}
+
 // Valida y acota los parámetros de la URL
 export function parseParams(searchParams) {
   const p = searchParams
@@ -37,10 +45,12 @@ export function parseParams(searchParams) {
 }
 
 export async function search({ source, q, page, lang, ...filters }) {
-  const query = cleanRequest(q)
-  const base = { query, items: [], hasMore: false }
+  const typed = cleanRequest(q)
+  const query = correctSpelling(typed)
+  // corrected: lo que escribió el chico, si se corrigió la ortografía
+  const base = { query, items: [], hasMore: false, ...(query !== typed && { corrected: typed }) }
   if (!query) return base
-  if (isBlocked(query)) return { ...base, blocked: true }
+  if (isBlocked(typed) || isBlocked(query)) return { ...base, blocked: true }
   const copyright = copyrightSuggestion(query, lang)
 
   const src = SOURCES[source]

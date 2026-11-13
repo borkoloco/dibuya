@@ -64,7 +64,12 @@ export default function App() {
         .then((res) => res.json())
         .then((data) => {
           if (id !== reqId.current) return
-          setMeta((m) => ({ query: data.query, blocked: data.blocked, copyright: data.copyright ?? m.copyright }))
+          setMeta((m) => ({
+            query: data.query,
+            corrected: data.corrected,
+            blocked: data.blocked,
+            copyright: data.copyright ?? m.copyright,
+          }))
           setItems((prev) => {
             const ids = new Set(prev.map((i) => i.id))
             return [...prev, ...(data.items ?? []).filter((i) => !ids.has(i.id))]
@@ -223,6 +228,9 @@ export default function App() {
         </section>
       )}
 
+      {!showFavs && meta.corrected && !meta.blocked && (
+        <p className="mt-3 text-base text-stone-600">{t('searchedAs', { q: meta.query })}</p>
+      )}
       {!showFavs && meta.blocked && <Notice>{t('blocked')}</Notice>}
       {!showFavs && meta.copyright && (
         <Notice>

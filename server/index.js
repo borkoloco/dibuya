@@ -4,7 +4,7 @@
 import http from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
-import { search, parseParams } from './search.js'
+import { search, parseParams, cacheControl } from './search.js'
 
 const PORT = Number(process.env.PORT) || 8787
 const DIST = new URL('../dist/', import.meta.url).pathname
@@ -16,7 +16,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (url.pathname === '/api/search') {
       const body = await search(parseParams(url.searchParams))
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': cacheControl(body) })
       return res.end(JSON.stringify(body))
     }
     // Sirve el build del frontend (npm run build && npm start)

@@ -99,6 +99,10 @@ const ES_EN = {
   capa: 'cape', roja: 'red', rojo: 'red', azul: 'blue', verde: 'green', amarillo: 'yellow',
   tierno: 'cute', tierna: 'cute', con: 'with', ninja: 'ninja', vaquero: 'cowboy',
   bombero: 'firefighter', policia: 'police', medico: 'doctor', payaso: 'clown',
+  dino: 'dinosaur', cebra: 'zebra', pulpo: 'octopus', oveja: 'sheep', koala: 'koala', loro: 'parrot',
+  hormiga: 'ant', caracol: 'snail', flamenco: 'flamingo', cocodrilo: 'crocodile', hipopotamo: 'hippo',
+  mapache: 'raccoon', ardilla: 'squirrel', perezoso: 'sloth', nave: 'spaceship', planeta: 'planet',
+  tractor: 'tractor', guitarra: 'guitar', volcan: 'volcano', angel: 'angel', cangrejo: 'crab',
 }
 
 export function toEnglish(q) {
@@ -131,4 +135,55 @@ export function openverseTerm({ color, style }) {
   if (style === 'realistic') return null
   if (color === 'outline') return 'line drawing'
   return 'clipart'
+}
+
+// --- Tolerancia a errores de ortografía ---
+// "dinosaurrio" -> "dinosaurio", "unicornyo" -> "unicornio". Solo se corrigen palabras
+// desconocidas y largas, para no cambiar palabras válidas cortas ("rosa" no pasa a "roja").
+const VOCABULARY = new Set([
+  ...Object.keys(ES_EN),
+  ...Object.values(ES_EN).flatMap((v) => v.split(' ')),
+  ...Object.keys(COPYRIGHTED).flatMap((k) => k.split(' ')),
+])
+
+// Cómo suena en castellano rioplatense: ll/y, v/b, z/ce/ci/s, h muda
+function sound(w) {
+  return w.replace(/ll/g, 'y').replace(/v/g, 'b').replace(/z/g, 's').replace(/c([ei])/g, 's$1').replace(/h/g, '')
+}
+
+// Distancia de edición contando dos letras invertidas ("unicron") como un solo error
+function distance(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 99
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)])
+  for (let j = 1; j <= b.length; j++) d[0][j] = j
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1)
+    }
+  }
+  return d[a.length][b.length]
+}
+
+function correctWord(word) {
+  if (word.length < 5 || VOCABULARY.has(word)) return word
+  const maxDist = word.length >= 8 ? 2 : 1
+  let best = word
+  let bestDist = maxDist + 1
+  for (const known of VOCABULARY) {
+    const d = Math.min(distance(word, known), distance(sound(word), sound(known)))
+    if (d < bestDist) {
+      best = known
+      bestDist = d
+    }
+  }
+  return best
+}
+
+export function correctSpelling(q) {
+  return q
+    .split(' ')
+    .map(correctWord)
+    .join(' ')
 }

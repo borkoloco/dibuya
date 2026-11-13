@@ -1,6 +1,7 @@
 // Página para Santiago: qué pidieron los chicos y con qué palabras habilitarlo.
 // Se abre con /?admin. La contraseña es ADMIN_PASSWORD (variable de entorno del backend).
 import { useCallback, useEffect, useState } from 'react'
+import { APP_NAME } from './brand.js'
 
 const KEY = 'dibuya:admin'
 
@@ -69,7 +70,7 @@ export default function Admin() {
           load()
         }}
       >
-        <h1 className="mb-4 text-2xl font-black text-orange-500">✏️ Dibuya · pedidos</h1>
+        <h1 className="mb-4 text-2xl font-black text-orange-500">✏️ {APP_NAME} · pedidos</h1>
         <input
           type="password"
           value={password}
@@ -91,7 +92,7 @@ export default function Admin() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-black text-orange-500">✏️ Dibuya · pedidos</h1>
+        <h1 className="text-2xl font-black text-orange-500">✏️ {APP_NAME} · pedidos</h1>
         <button onClick={load} className="ml-auto rounded-full bg-white px-4 py-2 font-semibold ring-2 ring-orange-200">
           🔄 Actualizar
         </button>

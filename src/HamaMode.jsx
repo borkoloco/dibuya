@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useT } from './i18n.jsx'
 import { loadReadableImage, pixelate, rgbCss } from './pixelate.js'
+import { APP_NAME } from './brand.js'
 
 const SIZES = [15, 29, 58] // 29×29 es la placa cuadrada estándar
 const COLOR_COUNTS = [4, 8, 16]
@@ -294,7 +295,7 @@ function downloadGrid(grid, view, name) {
   const ly = oy + grid.rows * cell + pad
   ctx.font = 'bold 18px system-ui, sans-serif'
   ctx.fillStyle = '#1c1917'
-  ctx.fillText(`Dibuya · ${grid.cols}×${grid.rows} · ${grid.total}`, pad, ly + 4)
+  ctx.fillText(`${APP_NAME} · ${grid.cols}×${grid.rows} · ${grid.total}`, pad, ly + 4)
   ctx.font = '16px system-ui, sans-serif'
   grid.palette.forEach((p, n) => {
     const x = pad + (n % legendCols) * 220

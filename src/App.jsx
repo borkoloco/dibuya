@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFavorites, useSpeech } from './hooks.js'
 import { LANGS, useT } from './i18n.jsx'
 import CopyMode from './CopyMode.jsx'
+import { APP_NAME } from './brand.js'
 
 const CATEGORIES = [
   ['🦖', 'dinosaur'], ['🐶', 'dog'], ['🐱', 'cat'], ['🦄', 'unicorn'], ['🐉', 'dragon'],
@@ -17,7 +18,8 @@ const FILTERS = {
   difficulty: [['easy', '⭐'], ['medium', '⭐⭐'], ['detailed', '⭐⭐⭐']],
   style: [['cartoon', '🤪'], ['cute', '🥰'], ['realistic', '📷']],
 }
-const DEFAULT_FILTERS = { color: 'any', difficulty: 'any', style: 'any' }
+const WELCOME_KEY = 'dibuya:bienvenida'
+const DEFAULT_FILTERS ={ color: 'any', difficulty: 'any', style: 'any' }
 const SOURCE_NAMES = ['pixabay', 'openverse'] // Pixabay primero: es la que responde rápido
 
 export default function App() {
@@ -33,6 +35,22 @@ export default function App() {
   const [selected, setSelected] = useState(null)
   const [showFavs, setShowFavs] = useState(false)
   const [requested, setRequested] = useState(() => new Set()) // pedidos ya enviados en esta sesión
+  // Bienvenida: aparece sola la primera vez; después se abre desde el link del inicio
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try {
+      return !localStorage.getItem(WELCOME_KEY)
+    } catch {
+      return true
+    }
+  })
+  const closeWelcome = useCallback(() => {
+    setShowWelcome(false)
+    try {
+      localStorage.setItem(WELCOME_KEY, '1')
+    } catch {
+      /* sin almacenamiento: vuelve a aparecer la próxima vez */
+    }
+  }, [])
   const activeFilters = Object.values(filters).filter((v) => v !== 'any').length
   const reqId = useRef(0)
   const sourcesRef = useRef({})
@@ -133,8 +151,9 @@ export default function App() {
     <div className="mx-auto max-w-6xl px-4 pb-16">
       <header className="sticky top-0 z-10 -mx-4 bg-orange-50/95 px-4 pt-[max(.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
         <div className="flex items-center gap-2">
-          <button onClick={goHome} className="text-2xl font-black tracking-tight text-orange-500 sm:text-3xl">
-            ✏️ Dibuya
+          <button onClick={goHome} className="flex items-center gap-2 text-xl font-black tracking-tight text-orange-500 sm:text-3xl">
+            <img src="/favicon.svg" alt="" className="h-8 w-8 sm:h-10 sm:w-10" />
+            {APP_NAME}
           </button>
           <button
             onClick={nextLang}
@@ -224,8 +243,15 @@ export default function App() {
               </button>
             ))}
           </div>
+          <div className="mt-6 text-center">
+            <button onClick={() => setShowWelcome(true)} className="text-base font-semibold text-orange-600 underline">
+              {t('about', { name: APP_NAME })}
+            </button>
+          </div>
         </section>
       )}
+
+      {showWelcome && <Welcome onClose={closeWelcome} />}
 
       {!showFavs && meta.corrected && !meta.blocked && (
         <p className="mt-3 text-base text-stone-600">{t('searchedAs', { q: meta.query })}</p>
@@ -345,6 +371,42 @@ function Thumb({ item, onBroken }) {
         className={`h-full w-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
       />
     </span>
+  )
+}
+
+// Texto de bienvenida (de Rosario), en un popup que se cierra con ✕, con el
+// botón grande, tocando afuera o con Escape
+function Welcome({ onClose }) {
+  const { t } = useT()
+  const [title, ...paragraphs] = t('welcome', { name: APP_NAME }).split('\n\n')
+
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div role="dialog" aria-modal="true" aria-labelledby="welcome-title" className="relative max-h-full w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-xl">
+        <button onClick={onClose} aria-label={t('close')} className="absolute right-3 top-3 h-11 w-11 rounded-full bg-orange-50 text-xl font-bold text-stone-500">
+          ✕
+        </button>
+        <img src="/favicon.svg" alt="" className="h-16 w-16" />
+        <h1 id="welcome-title" className="mt-3 pr-8 text-2xl font-black text-orange-500 sm:text-3xl">{title}</h1>
+        {paragraphs.map((p, i) => (
+          <p key={i} className={`mt-3 text-base leading-relaxed sm:text-lg ${i === paragraphs.length - 1 ? 'font-bold text-orange-600' : 'text-stone-700'}`}>
+            {p}
+          </p>
+        ))}
+        <button onClick={onClose} className="mt-6 w-full rounded-full bg-orange-500 py-4 text-xl font-bold text-white shadow active:scale-95">
+          {t('letsDraw')}
+        </button>
+      </div>
+    </div>
   )
 }
 

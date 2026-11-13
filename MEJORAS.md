@@ -22,7 +22,7 @@ Lo mínimo para que la prueba sea justa: que encuentre lo que pide, rápido, y q
 
 Es el núcleo de la app: donde más valor se puede sumar.
 
-- [ ] 🟡 **Modo Hama / pixel art** (idea de Rosario, 13/11/2026). Un botón en el modo copiar que convierte el dibujo elegido en una cuadrícula de píxeles, para armarlo con cuentas Hama o dibujarlo en papel cuadriculado. Propuesta:
+- [x] 🟡 **Modo Hama / pixel art** (idea de Rosario, 13/11/2026). Primera versión hecha: botón 🟦 en el modo copiar, en [src/HamaMode.jsx](src/HamaMode.jsx) y [src/pixelate.js](src/pixelate.js). Falta probarla con Juanchi. Un botón en el modo copiar que convierte el dibujo elegido en una cuadrícula de píxeles, para armarlo con cuentas Hama o dibujarlo en papel cuadriculado. Propuesta:
   - **Tamaño de la cuadrícula:** 15×15 (chico), 29×29 (el pegboard cuadrado estándar de Hama) y 58×58 (cuatro pegboards).
   - **Colores:** reducir la imagen a pocos colores (4, 8 o 16) o a la paleta real de colores de Hama, para que el chico sepa qué cuentas usar.
   - **Fondo:** el blanco o transparente queda como espacio vacío del pegboard.

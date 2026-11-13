@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useWakeLock } from './hooks.js'
 import { useT } from './i18n.jsx'
+import HamaMode from './HamaMode.jsx'
 
 const GRID_OPTIONS = [0, 3, 4, 6]
 const MIN_ZOOM = 1
@@ -15,6 +16,9 @@ export default function CopyMode({ item, isFav, onToggleFav, onClose }) {
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [grid, setGrid] = useState(0)
   const [showInfo, setShowInfo] = useState(false)
+  const [showHama, setShowHama] = useState(false)
+  const showHamaRef = useRef(false)
+  showHamaRef.current = showHama
   const pointers = useRef(new Map())
   const gesture = useRef(null)
 
@@ -25,7 +29,12 @@ export default function CopyMode({ item, isFav, onToggleFav, onClose }) {
 
   useEffect(() => {
     rootRef.current?.requestFullscreen?.().catch(() => {})
-    const onKey = (e) => e.key === 'Escape' && onCloseRef.current()
+    // Escape cierra primero el modo Hama, si está abierto
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      if (showHamaRef.current) setShowHama(false)
+      else onCloseRef.current()
+    }
     window.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('keydown', onKey)
@@ -114,11 +123,13 @@ export default function CopyMode({ item, isFav, onToggleFav, onClose }) {
       <div className="flex items-center justify-between gap-1.5 border-t-2 border-orange-100 bg-orange-50 px-2 py-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:gap-2 sm:px-3">
         <Btn onClick={onClose} label={t('back')}>⬅️</Btn>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <Btn onClick={() => setZoomSafe(zoom / 1.4)} label={t('zoomOut')}>➖</Btn>
-          <Btn onClick={() => setZoomSafe(zoom * 1.4)} label={t('zoomIn')}>➕</Btn>
+          {/* En el celular se hace zoom pellizcando: los botones quedan para tablet y compu */}
+          <Btn onClick={() => setZoomSafe(zoom / 1.4)} label={t('zoomOut')} className="hidden sm:flex">➖</Btn>
+          <Btn onClick={() => setZoomSafe(zoom * 1.4)} label={t('zoomIn')} className="hidden sm:flex">➕</Btn>
           <Btn onClick={nextGrid} label={t('grid')} active={grid > 0}>
             <span className="text-base font-bold">{grid ? `${grid}×${grid}` : '#'}</span>
           </Btn>
+          <Btn onClick={() => setShowHama(true)} label={t('hama')}>🟦</Btn>
           <Btn onClick={() => onToggleFav(item)} label={t('favorite')} active={isFav}>{isFav ? '⭐' : '☆'}</Btn>
           <Btn onClick={() => setShowInfo((v) => !v)} label={t('info')}>ℹ️</Btn>
         </div>
@@ -133,6 +144,8 @@ export default function CopyMode({ item, isFav, onToggleFav, onClose }) {
           {item.link && <HoldToOpen href={item.link} label={t('original')} hint={t('holdToOpen')} />}
         </div>
       )}
+
+      {showHama && <HamaMode item={item} onClose={() => setShowHama(false)} />}
     </div>
   )
 }
@@ -177,13 +190,13 @@ function HoldToOpen({ href, label, hint }) {
   )
 }
 
-function Btn({ children, onClick, label, active }) {
+function Btn({ children, onClick, label, active, className = 'flex' }) {
   return (
     <button
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-11 min-w-11 items-center justify-center rounded-2xl px-1.5 text-xl transition active:scale-95 sm:h-12 sm:min-w-12 sm:px-2 sm:text-2xl ${
+      className={`${className} h-11 min-w-11 items-center justify-center rounded-2xl px-1.5 text-xl transition active:scale-95 sm:h-12 sm:min-w-12 sm:px-2 sm:text-2xl ${
         active ? 'bg-orange-400 text-white' : 'bg-white ring-2 ring-orange-200'
       }`}
     >

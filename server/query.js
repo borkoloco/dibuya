@@ -193,3 +193,10 @@ export function correctSpelling(q) {
     .map(correctWord)
     .join(' ')
 }
+
+// Clave de un pedido o una búsqueda para guardarla (pedidos, lo más buscado): la misma
+// que usa la búsqueda, limpia y con la ortografía corregida. null si no sirve o está bloqueada.
+export function requestKey(text) {
+  const q = correctSpelling(cleanRequest(String(text ?? '').slice(0, 80)))
+  return q && q.length <= 60 && !isBlocked(q) ? q : null
+}

@@ -104,7 +104,9 @@ export default function Admin() {
       )}
       {error && <p className="mt-3 text-red-600">{error}</p>}
 
-      <h2 className="mt-6 text-lg font-bold">Pedidos sin resolver ({pending.length})</h2>
+      {data.stats && <Stats stats={data.stats} />}
+
+      <h2 className="mt-8 text-lg font-bold">Pedidos sin resolver ({pending.length})</h2>
       <p className="text-sm text-stone-500">
         Escribí con qué palabras buscarlo, mejor en inglés (por ejemplo, “bakugan” → “battle toy ball”). Se suma a la búsqueda
         normal y primero se muestran los dibujos que mencionan lo pedido.
@@ -165,6 +167,98 @@ export default function Admin() {
           </li>
         ))}
       </ul>
+    </div>
+  )
+}
+
+// --- Estadísticas ---
+
+const sum = (days, key) => days.reduce((n, d) => n + d[key], 0)
+const fmtDay = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+
+function Stats({ stats }) {
+  const { days, top } = stats
+  const today = days.at(-1)
+  const last7 = days.slice(-7)
+  const max = Math.max(1, ...days.map((d) => d.visit))
+  const [hover, setHover] = useState(null)
+  const shown = hover ?? today
+
+  return (
+    <section className="mt-6">
+      <h2 className="text-lg font-bold">Uso</h2>
+      <p className="text-sm text-stone-500">
+        Visitas = dispositivos distintos por día (cada celular cuenta una vez por día). Sin datos personales.
+      </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Tile label="Visitas hoy" value={today.visit} />
+        <Tile label="Visitas 7 días" value={sum(last7, 'visit')} />
+        <Tile label="Visitas 30 días" value={sum(days, 'visit')} />
+        <Tile label="Dispositivos nuevos 30 días" value={sum(days, 'new')} />
+        <Tile label="Búsquedas 7 días" value={sum(last7, 'search')} />
+        <Tile label="Dibujos abiertos 7 días" value={sum(last7, 'copy')} />
+        <Tile label="Modo Hama 7 días" value={sum(last7, 'hama')} />
+        <Tile label="Favoritos 7 días" value={sum(last7, 'fav')} />
+      </div>
+
+      <div className="mt-4 rounded-xl bg-white p-4 ring-1 ring-orange-100">
+        <div className="flex items-baseline justify-between gap-2">
+          <h3 className="font-semibold">Visitas por día · últimos 30 días</h3>
+          <span className="text-sm text-stone-500">
+            {fmtDay(shown.date)}: <b className="text-stone-800">{shown.visit}</b> visitas · {shown.search} búsquedas
+          </span>
+        </div>
+        <div className="mt-3 flex h-32 items-end gap-0.5" onMouseLeave={() => setHover(null)}>
+          {days.map((d) => (
+            <button
+              key={d.date}
+              type="button"
+              aria-label={`${fmtDay(d.date)}: ${d.visit} visitas`}
+              onMouseEnter={() => setHover(d)}
+              onFocus={() => setHover(d)}
+              onClick={() => setHover(d)}
+              className="flex h-full flex-1 items-end"
+            >
+              <span
+                className={`block w-full rounded-t ${hover?.date === d.date ? 'bg-orange-600' : 'bg-orange-400'}`}
+                style={{ height: d.visit ? `${Math.max(3, (d.visit / max) * 100)}%` : '1px', background: d.visit ? undefined : '#e7e5e4' }}
+              />
+            </button>
+          ))}
+        </div>
+        <div className="mt-1 flex justify-between text-xs text-stone-400">
+          <span>{fmtDay(days[0].date)}</span>
+          <span>hoy</span>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl bg-white p-4 ring-1 ring-orange-100">
+        <h3 className="font-semibold">Lo más buscado este mes</h3>
+        {top.length === 0 ? (
+          <p className="mt-2 text-sm text-stone-500">Todavía no hay búsquedas.</p>
+        ) : (
+          <ol className="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+            {top.map((r, i) => (
+              <li key={r.q} className="flex justify-between gap-2 text-sm">
+                <span>
+                  <span className="text-stone-400">{i + 1}.</span> {r.q}
+                </span>
+                <span className="tabular-nums text-stone-500">{r.count}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function Tile({ label, value }) {
+  return (
+    <div className="rounded-xl bg-white p-3 ring-1 ring-orange-100">
+      <div className="text-2xl font-black tabular-nums">{value.toLocaleString('es-AR')}</div>
+      <div className="text-xs text-stone-500">{label}</div>
     </div>
   )
 }

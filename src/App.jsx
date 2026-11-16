@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFavorites, useSpeech } from './hooks.js'
 import { LANGS, useT } from './i18n.jsx'
 import CopyMode from './CopyMode.jsx'
-import { APP_NAME } from './brand.js'
+import { track, trackVisit } from './track.js'
+import { APP_NAME, DONATE_URL } from './brand.js'
+import HoldToOpen from './HoldToOpen.jsx'
 
 const CATEGORIES = [
   ['🦖', 'dinosaur'], ['🐶', 'dog'], ['🐱', 'cat'], ['🦄', 'unicorn'], ['🐉', 'dragon'],
@@ -109,6 +111,18 @@ export default function App() {
     if (query) runSearch(query, filters, true)
   }, [query, filters, runSearch])
 
+  useEffect(trackVisit, [])
+
+  // Estadísticas: abrir un dibujo y guardar un favorito
+  const openItem = (item) => {
+    track('copy')
+    setSelected(item)
+  }
+  const toggleFav = (item) => {
+    if (!isFav(item)) track('fav')
+    toggle(item)
+  }
+
   const active = Object.values(sources).filter((s) => s.status !== 'disabled')
   const loading = active.some((s) => s.status === 'loading')
   const allFailed = active.length > 0 && active.every((s) => s.status === 'error')
@@ -120,6 +134,7 @@ export default function App() {
     if (!q) return
     setInput(q)
     setShowFavs(false)
+    track('search', { q })
     if (q === query) runSearch(q, filters, true)
     else setQuery(q)
   }
@@ -248,6 +263,14 @@ export default function App() {
               {t('about', { name: APP_NAME })}
             </button>
           </div>
+          {/* Donaciones: para adultos, al pie y detrás de "mantener apretado" */}
+          {DONATE_URL && (
+            <div className="mx-auto mt-6 max-w-md rounded-3xl bg-white p-4 text-center ring-2 ring-orange-100">
+              <p className="font-bold">{t('donateTitle', { name: APP_NAME })}</p>
+              <p className="mt-1 text-sm text-stone-600">{t('donateText')}</p>
+              <HoldToOpen href={DONATE_URL} label={t('donate')} hint={t('holdToOpen')} className="mt-3 text-center" />
+            </div>
+          )}
         </section>
       )}
 
@@ -301,14 +324,14 @@ export default function App() {
           {shown.map((item) => (
             <div key={item.id} className="relative">
               <button
-                onClick={() => setSelected(item)}
+                onClick={() => openItem(item)}
                 aria-label={item.title}
                 className="block aspect-square w-full overflow-hidden rounded-3xl bg-white p-2 shadow-sm ring-2 ring-orange-100 transition active:scale-95"
               >
                 <Thumb item={item} onBroken={markBroken} />
               </button>
               <button
-                onClick={() => toggle(item)}
+                onClick={() => toggleFav(item)}
                 aria-label={t('favorite')}
                 className="absolute right-2 top-2 h-12 w-12 rounded-full bg-white/90 text-2xl shadow active:scale-90"
               >
@@ -343,7 +366,7 @@ export default function App() {
       )}
 
       {selected && (
-        <CopyMode item={selected} isFav={isFav(selected)} onToggleFav={toggle} onClose={() => setSelected(null)} />
+        <CopyMode item={selected} isFav={isFav(selected)} onToggleFav={toggleFav} onClose={() => setSelected(null)} />
       )}
     </div>
   )

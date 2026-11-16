@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { search, parseParams, cacheControl } from './search.js'
 import { handleRequest, handleAdmin, storeKind } from './requests.js'
+import { handleEvent } from './stats.js'
 
 async function readJson(req) {
   let raw = ''
@@ -33,14 +34,18 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': cacheControl(body) })
       return res.end(JSON.stringify(body))
     }
-    if (url.pathname === '/api/request' || url.pathname === '/api/admin') {
+    const handlers = {
+      '/api/request': (body) => handleRequest(body),
+      '/api/event': (body) => handleEvent(body),
+    }
+    if (handlers[url.pathname] || url.pathname === '/api/admin') {
       const body = req.method === 'POST' ? await readJson(req) : null
       const result =
-        url.pathname === '/api/request'
-          ? req.method === 'POST'
-            ? await handleRequest(body)
+        url.pathname === '/api/admin'
+          ? await handleAdmin(req.method, body, req.headers['x-admin-password'])
+          : req.method === 'POST'
+            ? await handlers[url.pathname](body)
             : { status: 405, body: { error: 'Solo POST' } }
-          : await handleAdmin(req.method, body, req.headers['x-admin-password'])
       res.writeHead(result.status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
       return res.end(JSON.stringify(result.body))
     }

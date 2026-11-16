@@ -5,32 +5,15 @@
 // configurar, queda en memoria: sirve para desarrollar, pero se pierde al reiniciar.
 // No se guarda nada que identifique al chico: solo el texto del pedido y cuántas veces se pidió.
 import { timingSafeEqual } from 'node:crypto'
-import { normalize, cleanRequest, correctSpelling, isBlocked } from './query.js'
+import { normalize, isBlocked, requestKey } from './query.js'
+import { REDIS_URL, redis, pairs, storeKind } from './db.js'
+import { getStats } from './stats.js'
 
-const REDIS_URL = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL
-const REDIS_TOKEN = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN
 // Claves con prefijo: la misma base de Redis puede estar compartida con otros proyectos
 const K = { requests: 'dibuya:requests', last: 'dibuya:requests:last', aliases: 'dibuya:aliases' }
 const MAX_REQUESTS = 1000 // tope de pedidos distintos guardados, por si alguien abusa
 
 // --- Almacenamiento ---
-
-async function redis(commands) {
-  const res = await fetch(`${REDIS_URL}/pipeline`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
-    body: JSON.stringify(commands),
-    signal: AbortSignal.timeout(5000),
-  })
-  if (!res.ok) throw new Error(`Redis ${res.status}`)
-  const out = await res.json()
-  return out.map((r) => {
-    if (r.error) throw new Error(r.error)
-    return r.result
-  })
-}
-
-const pairs = (flat) => Object.fromEntries(Array.from({ length: flat.length / 2 }, (_, i) => [flat[2 * i], flat[2 * i + 1]]))
 
 const memory = { counts: new Map(), last: new Map(), aliases: new Map() }
 
@@ -74,7 +57,7 @@ const store = REDIS_URL
       aliases: async () => Object.fromEntries(memory.aliases),
     }
 
-export const storeKind = REDIS_URL ? 'redis' : 'memoria'
+export { storeKind }
 
 // --- Alias para la búsqueda (con caché corta para no consultar Redis en cada búsqueda) ---
 
@@ -91,12 +74,6 @@ export async function getAlias(query) {
     }
   }
   return aliasCache.value[query] ?? null
-}
-
-// La clave de un pedido es la misma que usa la búsqueda: limpia y con la ortografía corregida
-function requestKey(text) {
-  const q = correctSpelling(cleanRequest(String(text ?? '').slice(0, 80)))
-  return q && q.length <= 60 && !isBlocked(q) ? q : null
 }
 
 // --- Handlers (los usan el servidor local y las funciones de Vercel) ---
@@ -123,7 +100,10 @@ export async function handleAdmin(method, body, password) {
   if (!process.env.ADMIN_PASSWORD) return { status: 503, body: { error: 'Falta configurar ADMIN_PASSWORD' } }
   if (!authorized(password)) return { status: 401, body: { error: 'Contraseña incorrecta' } }
 
-  if (method === 'GET') return { status: 200, body: { ...(await store.list()), store: storeKind } }
+  if (method === 'GET') {
+    const [list, stats] = await Promise.all([store.list(), getStats()])
+    return { status: 200, body: { ...list, stats, store: storeKind } }
+  }
 
   const q = normalize(String(body?.q ?? '')).slice(0, 60)
   if (!q) return { status: 400, body: { error: 'Falta el pedido' } }

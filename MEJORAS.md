@@ -119,6 +119,21 @@ Ya definida en el CLAUDE.md, pendiente de hacer.
 - [ ] 🟢 **ESLint** y verificación del build en cada PR, con GitHub Actions.
 - [ ] 🟢 **Monitoreo de errores** en producción, con Sentry o los logs de Vercel.
 
+## 9. Estadísticas y donaciones
+
+- [x] 🟢 **Estadísticas en `/?admin`**, sin datos personales ni cookies:
+  - visitas por día, donde cada celular cuenta una vez y no se manda ningún identificador;
+  - dispositivos nuevos, búsquedas, dibujos abiertos, modo Hama y favoritos;
+  - lo más buscado del mes.
+
+  Se guardan en el mismo Redis y vencen a los 400 días. Cada evento usa 1 o 2 comandos de Redis (el plan gratis de Upstash trae unos 500.000 por mes).
+  - **Límite:** cualquiera podría mandar eventos falsos e inflar los números. No vale la pena protegerlo por ahora.
+  - **Las búsquedas se cuentan desde la app:** muchas responden desde la caché del CDN y nunca llegan a la función.
+- [x] 🟢 **Botón de donaciones**, en una tarjeta "Para grandes" al pie del inicio y detrás de "mantener apretado". Se activa poniendo el link en `DONATE_URL` ([src/brand.js](src/brand.js)).
+  - **Opciones:** Cafecito para Argentina (Mercado Pago) y Ko-fi o Buy Me a Coffee para el exterior.
+  - **Nunca pedirle plata al chico:** el mensaje habla a los adultos y no aparece en la pantalla de dibujo.
+- [ ] 🟢 **Contar cuántos tocan el botón de donar**, para saber si alguien lo ve.
+
 ## Limitaciones conocidas
 
 - Al cambiar de idioma, la búsqueda que está en pantalla no se vuelve a lanzar.

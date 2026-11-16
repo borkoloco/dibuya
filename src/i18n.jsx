@@ -11,6 +11,9 @@ const MESSAGES = {
   es: {
     placeholder: '¿Qué querés dibujar?',
     letsDraw: '¡A dibujar! ✏️',
+    donateTitle: '¿Les gusta {name}? 💛',
+    donateText: 'Es gratis y sin publicidad. Si quieren ayudar a que siga creciendo, pueden invitarnos un cafecito.',
+    donate: '☕ Invitar un cafecito',
     about: '👋 ¿Qué es {name}?',
     close: 'Cerrar',
     welcome:
@@ -80,6 +83,9 @@ const MESSAGES = {
   en: {
     placeholder: 'What do you want to draw?',
     letsDraw: "Let's draw! ✏️",
+    donateTitle: 'Do you like {name}? 💛',
+    donateText: "It's free and ad-free. If you'd like to help it grow, you can buy us a coffee.",
+    donate: '☕ Buy us a coffee',
     about: '👋 What is {name}?',
     close: 'Close',
     welcome:

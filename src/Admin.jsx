@@ -2,6 +2,7 @@
 // Se abre con /?admin. La contraseña es ADMIN_PASSWORD (variable de entorno del backend).
 import { useCallback, useEffect, useState } from 'react'
 import { APP_NAME } from './brand.js'
+import { isExcluded, setExcluded } from './track.js'
 
 const KEY = 'dibuya:admin'
 
@@ -18,6 +19,7 @@ export default function Admin() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [drafts, setDrafts] = useState({})
+  const [notCounted, setNotCounted] = useState(isExcluded)
 
   const api = useCallback(
     async (method, body) => {
@@ -37,6 +39,9 @@ export default function Admin() {
     try {
       setData(await api('GET'))
       setError('')
+      // Este dispositivo es de Santiago: no contarlo en las estadísticas
+      setExcluded(true)
+      setNotCounted(true)
       try {
         sessionStorage.setItem(KEY, password)
       } catch {
@@ -103,6 +108,18 @@ export default function Admin() {
         </p>
       )}
       {error && <p className="mt-3 text-red-600">{error}</p>}
+
+      <label className="mt-4 flex items-center gap-2 text-sm text-stone-600">
+        <input
+          type="checkbox"
+          checked={notCounted}
+          onChange={(e) => {
+            setExcluded(e.target.checked)
+            setNotCounted(e.target.checked)
+          }}
+        />
+        No contar este dispositivo en las estadísticas (se marca solo al entrar acá)
+      </label>
 
       {data.stats && <Stats stats={data.stats} />}
 
